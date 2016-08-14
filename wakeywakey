@@ -1,0 +1,19 @@
+wakeyWakey[] :=
+
+ Module[{reddit, twitter, twilio, musktweet, posts, topPicCaption,
+   topPic},
+  reddit = ServiceConnect["Reddit", "New"];
+  twitter = ServiceConnect["Twitter", "New"];
+  twilio = ServiceConnect["Twilio"];
+
+  musktweet = twitter["TweetList", "Username" -> "ElonMusk"][[1, 2]];
+  posts = reddit["SubredditPosts", "Subreddit" -> "pics"];
+  topPic = posts["Posts"][4][6];
+  topPicCaption = posts["Posts"][4][4];
+  twilio["Send", {"To" -> "+12703138715", "From" -> "3098073024",
+    "Body" ->
+     "I hope you're having a wonderful day. Here's your update. Elon \
+Musk's latest tweet reads: " <> musktweet <>
+      " while the latest image from r/pics is below: " <>
+      topPicCaption}];
+  ]

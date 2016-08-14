@@ -1,0 +1,111 @@
+reddit = ServiceConnect["Reddit"];
+twitter = ServiceConnect["Twitter"];
+twilio = ServiceConnect["Twilio"]
+
+wakeyWakey[] :=
+ 
+ Module[{currentRecipientInfo, recipientNumber, maxTemp, minTemp, 
+   tweet, posts, topPicCaption, topPic, stockValue, i},
+  (*reddit=ServiceConnect["Reddit","New"];
+  twitter=ServiceConnect["Twitter","New"];
+  twilio=ServiceConnect["Twilio"];*)
+  Do[
+   currentRecipientInfo = 
+    Values[Databin[userData, All, ToString[i]]][[1, 1]];
+   recipientNumber = currentRecipientInfo[[1]];
+   
+   maxTemp = 
+    ToString[
+     WeatherForecastData[currentRecipientInfo[[2]], 
+       DateObject[Tomorrow]]["MaxTemperature"]];
+   minTemp = 
+    ToString[
+     WeatherForecastData[currentRecipientInfo[[2]], 
+       DateObject[Tomorrow]]["MinTemperature"]];
+   tweet = 
+    twitter["TweetList", "Username" -> currentRecipientInfo[[3]]][[1, 
+     2]];
+   stockValue = 
+    ToString[
+     FinancialData[currentRecipientInfo[[4]]]*
+      currentRecipientInfo[[5]]]; 
+   posts = reddit["SubredditPosts", 
+     "Subreddit" -> currentRecipientInfo[[6]]];
+   topPic = posts["Posts"][4][6];
+   topPicCaption = posts["Posts"][4][4];
+   
+   twilio[
+    "Send", {"To" -> recipientNumber, "From" -> "3098073024", 
+     "Body" -> 
+      "Good morning! I hope you have a wonderful day. Here's your \
+update:"}];
+   
+   twilio[
+    "Send", {"To" -> recipientNumber, "From" -> "3098073024", 
+     "Body" -> 
+      "The latest pic from r/" <> currentRecipientInfo[[6]] <> 
+       " reads: " <> topPicCaption, "MediaURL" -> topPic}];
+   
+   twilio[
+    "Send", {"To" -> recipientNumber, "From" -> "3098073024", 
+     "Body" -> 
+      "The high today is going to be " <> maxTemp <> 
+       " while the low is going to be " <> minTemp <> "."}];
+   
+   twilio[
+    "Send", {"To" -> recipientNumber, "From" -> "3098073024", 
+     "Body" -> 
+      "Your current portfolio value today is $" <> stockValue <> "."}];
+   
+   twilio[
+    "Send", {"To" -> recipientNumber, "From" -> "3098073024", 
+     "Body" -> 
+      "The latest tweet from @" <> currentRecipientInfo[[3]] <> 
+       " reads: " <> tweet}];
+   
+   , {i, Length[Values[userData]]}]
+  ]
+  
+  CloudDeploy[
+ FormFunction[{{"phoneNumber", "Phone Number"} -> <|
+     "Interpreter" -> "String", "Hint" -> "ex: 5556667788", 
+     "Help" -> 
+      "This phone number will be used to send SMS updates each \
+morning about your personally tailored information."|>, \
+{"weatherLocation", "Location"} -> <|"Interpreter" -> "Location", 
+     "Hint" -> "San Francisco", 
+     "Help" -> 
+      "Type the location you'd like to receive weather updates for."|> \
+, {"twitterUserHandle", "@"} -> <|"Interpreter" -> "String", 
+     "Hint" -> "elonmusk", 
+     "Help" -> 
+      "Type the username of a Twitter user you'd like to receive \
+morning updates about."|>, {"stocks", "Stock Tracking"} -> <|
+     "Interpreter" -> "String", "Hint" -> "AAPL", 
+     "Help" -> 
+      "Type in the stock ticker symbol of a stock you'd like to \
+track."|>, {"shareAmount", "Amount of Shares"} -> <|
+     "Interpreter" -> "Number", "Hint" -> "32", 
+     "Help" -> 
+      "Type in the number of shares you own of the previous stock \
+you'd like to track."|>,
+   {"subreddit", "r/"} -> <|"Interpreter" -> "String", 
+     "Hint" -> "pics", 
+     "Help" -> 
+      "Type in the name of the image based subreddit you'd like \
+receive daily images from. (No gifs please! :D)"|>}, 
+  DatabinAdd[
+    userData, <|
+     ToString[
+       Length[Values[userData]] + 
+        1] -> {#phoneNumber, #weatherLocation, #twitterUserHandle, \
+#stocks, #shareAmount, #subreddit}|>] &, 
+  AppearanceRules -> {"Title" -> *insert image file here* "ItemLayout" -> "Horizontal"}, 
+  FormTheme -> "Blue"]
+ (*Style["Thanks for submitting! You'll receive updates each morning \
+with your requested information. \
+:)",Gray,FontFamily\[Rule]"Verdana"]];*)
+ 
+ , Permissions -> "Public"]
+ 
+ StartScheduledTask[CreateScheduledTask[wakeyWakey[], 18000]]
